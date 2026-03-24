@@ -19,9 +19,11 @@ repositories {
 dependencies {
     // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")   // WebClient for DeFiLlama API
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+
 
     // Kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
