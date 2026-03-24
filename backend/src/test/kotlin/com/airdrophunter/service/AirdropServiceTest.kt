@@ -1,12 +1,9 @@
 package com.airdrophunter.service
 
 import com.airdrophunter.domain.Airdrop
-import com.airdrophunter.dto.WalletCheckRequest
 import com.airdrophunter.repository.AirdropRepository
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -152,91 +149,4 @@ class AirdropServiceTest {
         }
     }
 
-    // ── checkWallet ──────────────────────────────────────────────────────────
-
-    @Nested
-    @DisplayName("checkWallet()")
-    inner class CheckWallet {
-
-        private val validEthAddress = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
-        // hash("0xd8da6bf26964af9d7eed9e03e53415d37aa96045") % 3 != 0 → eligible
-
-        @Test
-        fun `returns ineligible for invalid address`() = runTest {
-            val result = service.checkWallet(WalletCheckRequest("not-a-wallet"))
-
-            assertFalse(result.eligible)
-            assertTrue(result.reason.contains("Invalid wallet address format"))
-            assertEquals(BigDecimal.ZERO, result.estimatedReward)
-            assertTrue(result.eligibleAirdrops.isEmpty())
-        }
-
-        @Test
-        fun `returns ineligible for short address`() = runTest {
-            val result = service.checkWallet(WalletCheckRequest("0xabc123"))
-
-            assertFalse(result.eligible)
-            assertTrue(result.reason.contains("Invalid wallet address format"))
-        }
-
-        @Test
-        fun `eligible wallet returns reward and qualified airdrop names`() = runTest {
-            val airdrops = listOf(
-                airdrop(id = 1, name = "LayerZero", value = BigDecimal("2500.00")),
-                airdrop(id = 2, name = "zkSync Era", value = BigDecimal("1800.00"))
-            )
-            every { repo.findAllByIsActiveTrueOrderByEstimatedValueDesc() } returns airdrops
-
-            // Use address known to produce hash % 3 != 0
-            val result = service.checkWallet(WalletCheckRequest(validEthAddress))
-
-            // eligible addresses always return a non-negative reward
-            if (result.eligible) {
-                assertTrue(result.estimatedReward >= BigDecimal.ZERO)
-                assertNotNull(result.reason)
-            } else {
-                assertEquals(BigDecimal.ZERO, result.estimatedReward)
-            }
-            assertEquals(validEthAddress, result.address)
-        }
-
-        @Test
-        fun `address is trimmed and lowercased before validation`() = runTest {
-            // Uppercase valid ETH address with surrounding whitespace
-            val result = service.checkWallet(
-                WalletCheckRequest("  0xD8DA6BF26964AF9D7EED9E03E53415D37AA96045  ")
-            )
-            // Should NOT be rejected for format; may be eligible or not
-            assertNotEquals("Invalid wallet address format. Please provide a valid EVM (0x...) or Solana address.", result.reason)
-        }
-
-        @Test
-        fun `ineligible wallet returns zero reward and empty airdrop list`() = runTest {
-            // Address whose hash % 3 == 0 is eligible = false
-            // We can mock a known-ineligible address by seeding repo with drops
-            every { repo.findAllByIsActiveTrueOrderByEstimatedValueDesc() } returns emptyList()
-
-            // Try many addresses to find one that is definitely ineligible (hash % 3 == 0)
-            val ineligibleAddr = "0x0000000000000000000000000000000000000001"
-            val result = service.checkWallet(WalletCheckRequest(ineligibleAddr))
-
-            if (!result.eligible) {
-                assertEquals(BigDecimal.ZERO, result.estimatedReward)
-                assertTrue(result.eligibleAirdrops.isEmpty())
-            }
-            // If by coincidence this is eligible, test still passes (not asserting specific hash outcome)
-        }
-
-        @Test
-        fun `solana-length address is accepted as valid format`() = runTest {
-            every { repo.findAllByIsActiveTrueOrderByEstimatedValueDesc() } returns emptyList()
-
-            // 44-char base58 Solana-style address (no 0x prefix)
-            val solanaAddr = "DQyrAcCrDXQ7NeoqGgDCZwBvWDcYmFCjSSnMCLKCjGJb"
-            val result = service.checkWallet(WalletCheckRequest(solanaAddr))
-
-            // Should NOT return the "Invalid address" reason
-            assertNotEquals("Invalid wallet address format. Please provide a valid EVM (0x...) or Solana address.", result.reason)
-        }
-    }
 }

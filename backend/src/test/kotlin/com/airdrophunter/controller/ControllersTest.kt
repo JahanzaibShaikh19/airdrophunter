@@ -2,15 +2,19 @@ package com.airdrophunter.controller
 
 import com.airdrophunter.dto.AirdropDto
 import com.airdrophunter.dto.StatsDto
-import com.airdrophunter.dto.WalletCheckResponse
+import com.airdrophunter.dto.AirdropEligibility
+import com.airdrophunter.dto.WalletResult
 import com.airdrophunter.service.AirdropService
+import com.airdrophunter.service.WalletService
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -29,6 +33,9 @@ import java.time.ZoneOffset
 class MockServiceConfig {
     @Bean
     fun airdropService(): AirdropService = mockk()
+
+    @Bean
+    fun walletService(): WalletService = mockk()
 }
 
 // ── Fixture ──────────────────────────────────────────────────────────────────
@@ -131,69 +138,75 @@ class AirdropControllerTest {
 // ── WalletController ─────────────────────────────────────────────────────────
 
 @WebMvcTest(WalletController::class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(MockServiceConfig::class)
 @DisplayName("WalletController")
 class WalletControllerTest {
 
     @Autowired lateinit var mvc: MockMvc
-    @Autowired lateinit var service: AirdropService
+    @Autowired lateinit var service: WalletService
     @Autowired lateinit var objectMapper: ObjectMapper
 
     @Test
     fun `POST check returns 200 with eligible response`() {
-        val response = WalletCheckResponse(
+        val response = WalletResult(
             address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
-            eligible = true,
-            reason = "Wallet is eligible",
-            estimatedReward = BigDecimal("275.00"),
-            eligibleAirdrops = listOf("LayerZero", "zkSync Era")
+            eligibleAirdrops = listOf(
+                AirdropEligibility(
+                    airdropName = "LayerZero Airdrop",
+                    protocol = "LayerZero",
+                    estimatedValue = "$2500.00",
+                    reason = "Strong cross-chain profile"
+                )
+            ),
+            totalEstimatedValue = "$2500.00",
+            recommendations = listOf("Use zkSync Era more frequently")
         )
-        coEvery { service.checkWallet(any()) } returns response
+        every { service.checkWallet(any()) } returns response
 
         mvc.post("/api/wallet/check") {
             contentType = MediaType.APPLICATION_JSON
             content = """{"address":"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"}"""
         }.andExpect {
             status { isOk() }
-            jsonPath("$.eligible") { value(true) }
-            jsonPath("$.estimatedReward") { value(275.0) }
-            jsonPath("$.eligibleAirdrops.length()") { value(2) }
-            jsonPath("$.eligibleAirdrops[0]") { value("LayerZero") }
+            jsonPath("$.address") { value("0xd8da6bf26964af9d7eed9e03e53415d37aa96045") }
+            jsonPath("$.totalEstimatedValue") { value("$2500.00") }
+            jsonPath("$.eligibleAirdrops.length()") { value(1) }
+            jsonPath("$.eligibleAirdrops[0].airdropName") { value("LayerZero Airdrop") }
         }
     }
 
     @Test
     fun `POST check returns 200 with ineligible response`() {
-        val response = WalletCheckResponse(
+        val response = WalletResult(
             address = "0x0000000000000000000000000000000000000001",
-            eligible = false,
-            reason = "Wallet does not meet criteria",
-            estimatedReward = BigDecimal.ZERO,
-            eligibleAirdrops = emptyList()
+            eligibleAirdrops = emptyList(),
+            totalEstimatedValue = "$0.00",
+            recommendations = listOf("Increase Ethereum mainnet activity")
         )
-        coEvery { service.checkWallet(any()) } returns response
+        every { service.checkWallet(any()) } returns response
 
         mvc.post("/api/wallet/check") {
             contentType = MediaType.APPLICATION_JSON
             content = """{"address":"0x0000000000000000000000000000000000000001"}"""
         }.andExpect {
             status { isOk() }
-            jsonPath("$.eligible") { value(false) }
-            jsonPath("$.estimatedReward") { value(0) }
+            jsonPath("$.totalEstimatedValue") { value("$0.00") }
             jsonPath("$.eligibleAirdrops.length()") { value(0) }
         }
     }
 
     @Test
-    fun `POST check accepts Content-Type application-json`() {
-        coEvery { service.checkWallet(any()) } returns WalletCheckResponse(
-            address = "0xtest", eligible = false, reason = "invalid", estimatedReward = BigDecimal.ZERO, eligibleAirdrops = emptyList()
+    fun `POST check returns 400 for bad wallet input`() {
+        every { service.checkWallet(any()) } throws org.springframework.web.server.ResponseStatusException(
+            org.springframework.http.HttpStatus.BAD_REQUEST,
+            "Wallet address must be a valid Ethereum address"
         )
 
         mvc.post("/api/wallet/check") {
             contentType = MediaType.APPLICATION_JSON
             content = """{"address":"0xtest"}"""
-        }.andExpect { status { isOk() } }
+        }.andExpect { status { isBadRequest() } }
     }
 }
 

@@ -43,30 +43,33 @@ class DtoTest {
     }
 
     @Test
-    fun `WalletCheckResponse eligible=true carries reward and airdrops`() {
-        val res = WalletCheckResponse(
+    fun `WalletResult carries eligible airdrops and total value`() {
+        val res = WalletResult(
             address = "0xabc",
-            eligible = true,
-            reason = "ok",
-            estimatedReward = BigDecimal("275.00"),
-            eligibleAirdrops = listOf("LayerZero", "zkSync")
+            eligibleAirdrops = listOf(
+                AirdropEligibility(
+                    airdropName = "LayerZero Airdrop",
+                    protocol = "LayerZero",
+                    estimatedValue = "$2500.00",
+                    reason = "Strong cross-chain profile"
+                )
+            ),
+            totalEstimatedValue = "$2500.00",
+            recommendations = listOf("Use zkSync Era more frequently")
         )
-        assertTrue(res.eligible)
-        assertEquals(2, res.eligibleAirdrops.size)
-        assertEquals(BigDecimal("275.00"), res.estimatedReward)
+        assertEquals(1, res.eligibleAirdrops.size)
+        assertEquals("$2500.00", res.totalEstimatedValue)
     }
 
     @Test
-    fun `WalletCheckResponse eligible=false has zero reward and empty list`() {
-        val res = WalletCheckResponse(
+    fun `WalletResult can represent no eligibility`() {
+        val res = WalletResult(
             address = "0xbad",
-            eligible = false,
-            reason = "not eligible",
-            estimatedReward = BigDecimal.ZERO,
-            eligibleAirdrops = emptyList()
+            eligibleAirdrops = emptyList(),
+            totalEstimatedValue = "$0.00",
+            recommendations = listOf("Increase Ethereum mainnet activity")
         )
-        assertFalse(res.eligible)
-        assertEquals(BigDecimal.ZERO, res.estimatedReward)
+        assertEquals("$0.00", res.totalEstimatedValue)
         assertTrue(res.eligibleAirdrops.isEmpty())
     }
 

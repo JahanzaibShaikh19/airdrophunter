@@ -21,12 +21,18 @@ data class WalletCheckRequest(
     val address: String
 )
 
-data class WalletCheckResponse(
+data class AirdropEligibility(
+    val airdropName: String,
+    val protocol: String,
+    val estimatedValue: String,
+    val reason: String
+)
+
+data class WalletResult(
     val address: String,
-    val eligible: Boolean,
-    val reason: String,
-    val estimatedReward: BigDecimal,
-    val eligibleAirdrops: List<String>
+    val eligibleAirdrops: List<AirdropEligibility>,
+    val totalEstimatedValue: String,
+    val recommendations: List<String>
 )
 
 data class StatsDto(
