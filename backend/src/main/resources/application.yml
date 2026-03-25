@@ -26,13 +26,7 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
-  data:
-    redis:
-      host: ${SPRING_DATA_REDIS_HOST:localhost}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
 
-  cache:
-    type: redis
 
 management:
   endpoints:
@@ -55,3 +49,10 @@ wallet:
     alchemy-url: ${ALCHEMY_API_URL:https://eth-mainnet.g.alchemy.com/v2}
     alchemy-api-key: ${ALCHEMY_API_KEY:}
     zksync-url: ${ZKSYNC_API_URL:https://mainnet.era.zksync.io}
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production-use-at-least-64-characters-long-secret-key-here}
+  expiration-ms: ${JWT_EXPIRATION_MS:2592000000}  # 30 days
+
+gumroad:
+  webhook-secret: ${GUMROAD_WEBHOOK_SECRET:}
