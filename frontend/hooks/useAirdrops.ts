@@ -1,26 +1,40 @@
-'use client'
-
 import useSWR from 'swr'
-import type { Airdrop } from '@/lib/types'
+import { fetcher, getAuthToken } from '../lib/api'
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
-
-export function useAirdrops() {
-  const { data, error, isLoading } = useSWR<Airdrop[]>(
-    `${API}/api/airdrops`,
-    fetcher,
-    { refreshInterval: 30_000 }
-  )
-  return { airdrops: data ?? [], error, isLoading }
+export interface Airdrop {
+  id: number
+  name: string
+  symbol: string
+  logoUrl?: string
+  estimatedValueMin: number
+  estimatedValueMax: number
+  status: 'LIVE' | 'SOON' | 'ENDED'
+  category: 'L2' | 'BRIDGE' | 'DEFI' | 'AI' | 'OTHER'
+  deadline?: string
+  steps: string[]
+  isHot: boolean
+  isPro: boolean
+  llamaSlug?: string
 }
 
-export function useHotAirdrops() {
-  const { data, error, isLoading } = useSWR<Airdrop[]>(
-    `${API}/api/airdrops/hot`,
+export function useAirdrops() {
+  const token = getAuthToken()
+  // Automatically pivot to the /pro endpoint if the user has unlocked it
+  const endpoint = token ? '/airdrops/pro' : '/airdrops'
+  
+  const { data, error, isLoading, mutate } = useSWR<Airdrop[]>(
+    endpoint,
     fetcher,
-    { refreshInterval: 30_000 }
+    { 
+      refreshInterval: 30000, 
+      revalidateOnFocus: true 
+    }
   )
-  return { airdrops: data ?? [], error, isLoading }
+
+  return {
+    airdrops: data || [],
+    isLoading,
+    isError: error,
+    mutate
+  }
 }

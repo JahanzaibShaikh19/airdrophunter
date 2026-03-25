@@ -1,26 +1,32 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import { Navbar } from '@/components/Navbar'
-import './globals.css'
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { Navbar } from "@/components/Navbar"
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: 'AirdropHunter — Track & Claim Crypto Airdrops',
-  description: 'Discover, track, and claim the most valuable crypto airdrops across all chains. Real-time updates, wallet eligibility checks, and more.',
-  keywords: 'airdrop, crypto, DeFi, token, claim, eligibility, LayerZero, zkSync, Ethereum',
+  title: "AirdropHunter Dashboard",
+  description: "Monitor the DeFi ecosystem for lucrative airdrops in real-time.",
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-slate-950 text-white min-h-screen antialiased`}>
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-500/8 rounded-full blur-3xl" />
+      <body className={`${inter.className} min-h-screen relative overflow-x-hidden`}>
+        {/* Deep ambient background gradients */}
+        <div className="fixed inset-0 -z-10 bg-[#050B14]">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none" />
+          <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none" />
         </div>
+        
         <Navbar />
-        <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        <main className="container mx-auto px-4 py-8 relative z-10 w-full">
           {children}
         </main>
       </body>
