@@ -108,4 +108,3 @@ See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for configuring the expected GitHub Secre
 
 ## 📄 License & Legal
 AirdropHunter is proprietary software. All rights reserved. 
-*(Adjust license terms here according to organizational policy).*
