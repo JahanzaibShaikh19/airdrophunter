@@ -56,3 +56,9 @@ jwt:
 
 gumroad:
   webhook-secret: ${GUMROAD_WEBHOOK_SECRET:}
+
+telegram:
+  bot:
+    username: ${TELEGRAM_BOT_USERNAME:AirdropHunterBot}
+    token: ${TELEGRAM_BOT_TOKEN:}
+

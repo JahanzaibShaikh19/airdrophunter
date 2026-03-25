@@ -73,8 +73,17 @@ data class AirdropEntity(
     val llamaSlug: String? = null,
 
     @Column(name = "last_refreshed_at", nullable = false)
-    val lastRefreshedAt: OffsetDateTime = OffsetDateTime.now(),
+    val lastRefreshedAt: OffsetDateTime = OffsetDateTime.now(ZoneOffset.UTC),
+
+    @Column(name = "notified_new_at")
+    val notifiedNewAt: OffsetDateTime? = null,
+
+    @Column(name = "notified_hot_at")
+    val notifiedHotAt: OffsetDateTime? = null,
+
+    @Column(name = "notified_deadline_at")
+    val notifiedDeadlineAt: OffsetDateTime? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: OffsetDateTime = OffsetDateTime.now()
+    val createdAt: OffsetDateTime = OffsetDateTime.now(ZoneOffset.UTC)
 )

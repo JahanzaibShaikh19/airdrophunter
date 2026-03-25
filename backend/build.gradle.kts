@@ -25,6 +25,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    // Telegram Bot
+    implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
+
     // JWT (JJWT 0.12.x — modular)
     implementation("io.jsonwebtoken:jjwt-api:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")

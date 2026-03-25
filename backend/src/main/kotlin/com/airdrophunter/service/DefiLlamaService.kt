@@ -29,7 +29,8 @@ import java.util.concurrent.TimeUnit
 @Service
 class DefiLlamaService(
     private val webClient: WebClient,
-    private val repo: AirdropEntityRepository
+    private val repo: AirdropEntityRepository,
+    private val telegramAlertService: TelegramAlertService
 ) {
     private val log = LoggerFactory.getLogger(DefiLlamaService::class.java)
 
@@ -282,24 +283,48 @@ class DefiLlamaService(
 
     @Transactional
     fun upsertAll(entities: List<AirdropEntity>) {
+        val newAlerts = mutableListOf<AirdropEntity>()
+        val hotAlerts = mutableListOf<AirdropEntity>()
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
+
+        // Don't blast alerts on the very first sync to avoid spamming 50+ messages
+        val isFirstSync = repo.countLive() == 0L
+
         entities.forEach { incoming ->
             val slug = incoming.llamaSlug
             if (slug != null) {
-                val existing = repo.findByLlamaSlug(slug)
-                if (existing.isPresent) {
-                    // Update mutable fields; preserve original createdAt
+                val existingOpt = repo.findByLlamaSlug(slug)
+                if (existingOpt.isPresent) {
+                    val existing = existingOpt.get()
+                    val becameHot = incoming.isHot && !existing.isHot && existing.notifiedHotAt == null
+                    
                     val updated = incoming.copy(
-                        id = existing.get().id,
-                        createdAt = existing.get().createdAt
+                        id = existing.id,
+                        createdAt = existing.createdAt,
+                        notifiedNewAt = existing.notifiedNewAt,
+                        notifiedHotAt = if (becameHot) now else existing.notifiedHotAt,
+                        notifiedDeadlineAt = existing.notifiedDeadlineAt
                     )
-                    repo.save(updated)
+                    val saved = repo.save(updated)
+                    if (becameHot && !isFirstSync) hotAlerts.add(saved)
                 } else {
-                    repo.save(incoming)
+                    val toSave = incoming.copy(
+                        notifiedNewAt = now,
+                        notifiedHotAt = if (incoming.isHot) now else null
+                    )
+                    val saved = repo.save(toSave)
+                    if (!isFirstSync) {
+                        newAlerts.add(saved)
+                        if (incoming.isHot) hotAlerts.add(saved)
+                    }
                 }
             } else {
                 repo.save(incoming)
             }
         }
+
+        if (newAlerts.isNotEmpty()) telegramAlertService.notifyNewAirdrops(newAlerts)
+        if (hotAlerts.isNotEmpty()) telegramAlertService.notifyHotAirdrops(hotAlerts)
     }
 
     // ── Query helpers (used by controllers) ───────────────────────────────────
